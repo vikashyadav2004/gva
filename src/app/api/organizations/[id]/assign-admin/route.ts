@@ -1,13 +1,14 @@
-import { verifyJwt,cookieName, hashPassword } from "@/lib/auth";
-import { connectDB } from '@/app/lib/db';
-import { NextResponse } from "next/server"; 
-import Organization from '@/app/models/Organization';
-import User,{ UserRole } from '@/app/models/User'; 
+import { verifyJwt, cookieName, hashPassword } from "@/lib/auth";
+import { connectDB } from "@/app/lib/db";
+import { NextResponse } from "next/server";
+import Organization from "@/app/models/Organization";
+import User, { UserRole } from "@/app/models/User";
 import mongoose from "mongoose";
 
 interface AssignBody {
   name: string;
   email: string;
+  password: string;
 }
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -15,54 +16,71 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await connectDB();
 
     const orgId = params.id;
-    const { name, email }: AssignBody = await req.json();
+    const { name, email, password }: AssignBody = await req.json();
 
+    if (!name || !email || !password) {
+      return NextResponse.json({ message: "Name, Email & Password required" }, { status: 400 });
+    }
+
+    // ✅ Verify SUPER ADMIN
     const token = (req as any).cookies.get(cookieName)?.value;
-    const session = token ? verifyJwt(token) : null;
+    const session = token ? await verifyJwt(token) : null;
+
     if (!session || session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    // ✅ Validate Organization Exists
     const organization = await Organization.findById(orgId);
     if (!organization) {
       return NextResponse.json({ message: "Organization not found" }, { status: 404 });
     }
 
-    let admin = await User.findOne({ email });
+    // ✅ Check if user already exists
+    let user = await User.findOne({ email });
 
-    // Case 1: User exists → verify & assign
-    if (admin) {
-      if (admin.role !== UserRole.ORG_ADMIN) {
-        return NextResponse.json({ message: "User exists but not Org Admin" }, { status: 400 });
+    if (user) {
+      // User exists but must be ORG_ADMIN
+      if (user.role !== UserRole.ORG_ADMIN) {
+        return NextResponse.json(
+          { message: "User exists but is not an Organization Admin" },
+          { status: 400 }
+        );
       }
 
-      admin.organizationId = new mongoose.Types.ObjectId(orgId);
-      await admin.save();
-    }
-    else {
-      // Case 2: New Org Admin → generate temp password
-      const tempPassword = "Admin@123"; // you can randomize later
-      const hashed = await hashPassword(tempPassword);
+      // Update org assignment
+      user.organizationId = new mongoose.Types.ObjectId(orgId);
+      await user.save();
+    } else {
+      // ✅ Create new ORG_ADMIN
+      const hashedPassword = await hashPassword(password);
 
-      admin = await User.create({
+      user = await User.create({
         name,
         email,
-        password: hashed,
+        password: hashedPassword,
         role: UserRole.ORG_ADMIN,
         organizationId: orgId,
+        isActive: true,
       });
     }
 
-    // Save admin reference
-    organization.adminUserId = admin._id;
+    // ✅ Assign admin to organization
+    organization.adminUserId = user._id;
     await organization.save();
 
     return NextResponse.json({
       message: "Admin assigned successfully",
-      admin,
+      admin: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
+
   } catch (error) {
-    console.log(error);
+    console.log("ASSIGN ADMIN ERROR:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
