@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/app/lib/db";
-import User,{ UserRole }  from "@/app/models/User";
+import User  from "@/app/models/User";
 import {hashPassword} from "@/lib/auth";
+import { UserRole } from "../../organizations/[id]/assign-admin/route";
 
 export async function GET() {
   try {
