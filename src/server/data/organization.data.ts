@@ -17,16 +17,16 @@ export async function getOrganizations() {
 
   // ✅ SUPER ADMIN → return all orgs
   if (session.role === "SUPER_ADMIN") {
-    const orgs = await Organization.find().populate("adminUserId", "name email role");
+    const orgs = await Organization.find()
     return JSON.parse(JSON.stringify(orgs));
   }
 
   // ✅ ORG_ADMIN → return his org only
-  if (session.role === "ORG_ADMIN" && session.organizationId) {
-    const org = await Organization.find({ _id: session.organizationId })
-      .populate("adminUserId", "name email role");
-    return JSON.parse(JSON.stringify(org));
-  }
+  // if (session.role === "ORG_ADMIN" && session.organizationId) {
+  //   const org = await Organization.find({ _id: session.organizationId })
+  //     .populate("adminUserId", "name email role");
+  //   return JSON.parse(JSON.stringify(org));
+  // }
 
   return [];
 }
