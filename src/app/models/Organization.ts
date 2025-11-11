@@ -1,6 +1,13 @@
-import { Schema, model, models } from "mongoose";
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-const OrganizationSchema = new Schema(
+export interface IOrganization extends Document {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  code: string;
+  adminUserId?: mongoose.Types.ObjectId | null; // ✅ changed this
+}
+
+const OrganizationSchema = new Schema<IOrganization>(
   {
     name: { type: String, required: true },
     code: { type: String, required: true, unique: true },
@@ -9,4 +16,8 @@ const OrganizationSchema = new Schema(
   { timestamps: true }
 );
 
-export default models.Organization || model("Organization", OrganizationSchema);
+const Organization: Model<IOrganization> =
+  mongoose.models.Organization ||
+  mongoose.model<IOrganization>("Organization", OrganizationSchema);
+
+export default Organization;
