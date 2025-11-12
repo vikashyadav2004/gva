@@ -7,6 +7,7 @@ import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
+import UserMetaCard from "../user-profile/UserMetaCard";
 
 interface CreateOrganizationsProps {
   onSuccess?: () => void; // optional callback to refresh list after create
@@ -59,7 +60,7 @@ const CreateOrganizations: React.FC<CreateOrganizationsProps> = ({ onSuccess }) 
   };
 
   return (
-    <>
+    <> 
       {/* ✅ Create Org Button */}
       <Button
         onClick={() => setOpen(true)}

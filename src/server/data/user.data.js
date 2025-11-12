@@ -26,21 +26,4 @@ export async function getUsers() {
  
   // ✅ Default (regular user or no role)
   return [];
-}
-
-
-
-
-
-
-
-
-
-
-
-
-// +=+++++++====================++++===============++++=================
-
-// calll this in thiat way
-
-//  const users = await getUsers();
+} 

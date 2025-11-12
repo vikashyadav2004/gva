@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try {
     await connectDB();
 
-    const orgId = params.id;
+    const orgId = await params.id;
     const { name, email, password }: AssignBody = await req.json();
 
     if (!name || !email || !password) {
