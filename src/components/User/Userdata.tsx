@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,17 +9,19 @@ import {
   TableRow,
 } from "../ui/table";
 import Button from "../ui/button/Button";
-import { MoreDotIcon, PlusIcon } from "@/icons";
+import { PlusIcon } from "@/icons";
 import { Modal } from "../ui/modal";
 import CreateUsers from "../CustomeForms/CreateUsers";
 import Select from "../form/Select";
+import ActionMenu from "../ui/popover/ActionMenu";
+import { getOrgNameById } from "@/server/data/conversion";
 
 interface Organization {
   _id: string;
   adminUserId?: string;
   code: string;
   name: string;
-  createdAt: string; // ISO date string
+  createdAt: string;
   updatedAt: string;
   __v: number;
 }
@@ -27,182 +30,177 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  password: string; // hashed password
+  password: string;
   role: "ORG_ADMIN" | "USER" | "SUPER_ADMIN";
   organizationId?: string;
   isActive?: boolean;
-  createdAt: string; // ISO date string
+  createdAt: string;
   updatedAt: string;
   __v: number;
 }
 
 interface OrganizationListProps {
   organizations: Organization[];
-  users: User[]; // ✅ renamed to plural for clarity
+  users: User[];
 }
 
-const UsersData: React.FC<OrganizationListProps> = ({
-  organizations,
-  users,
-}) => {
+const UsersData: React.FC<OrganizationListProps> = ({ organizations, users }) => {
   const [isOpen, setisOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<string>("");
+  const [orgNames, setOrgNames] = useState<Record<string, string>>({});
 
-  console.log(users);
+  useEffect(() => {
+    async function loadOrgNames() {
+      const nameMap: Record<string, string> = {};
+
+      for (const user of users) {
+        if (user.organizationId && !nameMap[user.organizationId]) {
+          const orgName = await getOrgNameById(user.organizationId);
+          nameMap[user.organizationId] = orgName || "_";
+        }
+      }
+
+      setOrgNames(nameMap);
+    }
+
+    loadOrgNames();
+  }, [users]);
+
   const filteredUsers =
     selectedOrg === ""
       ? users
-      : users.filter((user) => user.organizationId === selectedOrg);
+      : users.filter((u) => u.organizationId === selectedOrg);
 
   return (
     <>
-      <div className="flex justify-between items-center mb-7">
-        <h1 className="text-2xl">Users</h1>
-        <div className="shrink-0 w-full max-w-2xl">
+      {/* Header Controls */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 className="text-3xl font-semibold text-gray-800 dark:text-white">
+          Users
+        </h1>
+
+        <div className="flex flex-1 gap-3 items-center">
           <Select
-            className="w-full"
+            className="w-full max-w-md"
             options={[
               { value: "", label: "All Organizations" },
-              ...organizations.map((organizations) => ({
-                value: String(organizations._id),
-                label: organizations.name,
+              ...organizations.map((org) => ({
+                value: String(org._id),
+                label: org.name,
               })),
             ]}
             placeholder="Filter by Organization"
             onChange={setSelectedOrg}
             defaultValue=""
           />
+
+          <Button
+            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white shadow-md px-4 py-2 rounded-lg"
+            onClick={() => setisOpen(true)}
+          >
+            <PlusIcon />
+            Add User
+          </Button>
         </div>
-        <Button
-          className="p-2"
-          onClick={() => {
-            setisOpen(true);
-          }}
-        >
-          <PlusIcon />
-          Add User
-        </Button>
       </div>
-      <div className="overflow-auto border rounded-2xl">
+
+      {/* Table Wrapper */}
+      <div className="overflow-auto border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm bg-white dark:bg-gray-900">
         <Table>
-          {/* ✅ Table Header */}
-          <TableHeader className="bg-gray-50 dark:bg-white/[0.04] border-b border-gray-200 dark:border-gray-800">
+          <TableHeader className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
             <TableRow>
-              <TableCell
-                isHeader
-                className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-6 py-3 text-start text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Organization
+              </TableCell>
+              <TableCell isHeader className="px-6 py-3 text-start text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Name
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-6 py-3 text-start text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Email
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-6 py-3 text-start text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Role
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400"
-              >
-                Organization ID
-              </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-6 py-3 text-start text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Status
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400"
-              >
+              <TableCell isHeader className="px-6 py-3 text-start text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Updated At
               </TableCell>
-              <TableCell
-                isHeader
-                className="px-5 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 text-right"
-              >
+              <TableCell isHeader className="px-6 py-3  text-sm font-semibold text-gray-700 dark:text-gray-300 text-right">
                 Actions
               </TableCell>
             </TableRow>
           </TableHeader>
 
-          {/* ✅ Table Body */}
-          <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-            {filteredUsers.length == 0 ? (
-              <p></p>
-            ) : (
-              filteredUsers.map((user, index) => {
-                if (user.role === "SUPER_ADMIN") return;
-                return (
-                  <TableRow
-                    key={user._id}
-                    className={`transition-colors ${
-                      index % 2 === 0
-                        ? "bg-white dark:bg-transparent"
-                        : "bg-gray-50/50 dark:bg-white/[0.02]"
-                    } hover:bg-gray-100/60 dark:hover:bg-white/[0.05]`}
-                  >
-                    <TableCell className="px-5 py-4 text-gray-800 font-medium dark:text-white/90">
-                      {user.name}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {user.email}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
-                      {user.role.replace("_", " ").toLowerCase()}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {user.organizationId ?? "_"}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {user.isActive ? (
-                        <span className="text-green-600 font-medium">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="text-red-500 font-medium">
-                          Inactive
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(
-                        user.updatedAt || user.createdAt
-                      ).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-right">
-                      <button className=" p-1  rounded-md  border border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-200 active:border-b-500 focus:outline-none focus:ring-2 focus:ring-gray-300 ">
-                        <MoreDotIcon />
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}{" "}
-            {users.length === 0 && (
+          <TableBody>
+            {filteredUsers.length === 0 && (
               <TableRow>
-                <TableCell className="text-center py-6 text-gray-500 text-sm dark:text-gray-400">
+                <TableCell 
+                  className="text-center py-6 text-gray-500 text-sm dark:text-gray-400"
+                >
                   No users found
                 </TableCell>
               </TableRow>
             )}
+
+            {filteredUsers.map((user, index) => {
+              if (user.role === "SUPER_ADMIN") return null;
+
+              return (
+                <TableRow
+                  key={user._id}
+                  className={`transition-colors ${
+                    index % 2 === 0
+                      ? "bg-white dark:bg-transparent"
+                      : "bg-gray-50 dark:bg-white/[0.05]"
+                  } hover:bg-gray-100 dark:hover:bg-gray-800/50`}
+                >
+                  <TableCell className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                    {orgNames[user.organizationId ?? ""] ?? "_"}
+                  </TableCell>
+
+                  <TableCell className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                    {user.name}
+                  </TableCell>
+
+                  <TableCell className="px-6 py-4 text-gray-700 dark:text-gray-300">
+                    {user.email}
+                  </TableCell>
+
+                  <TableCell className="px-6 py-4 text-gray-700 dark:text-gray-300 capitalize">
+                    {user.role.replace("_", " ").toLowerCase()}
+                  </TableCell>
+
+                  <TableCell className="px-6 py-4">
+                    {user.isActive ? (
+                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-md">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-md">
+                        Inactive
+                      </span>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="px-6 py-4 text-gray-700 dark:text-gray-300">
+                    {new Date(user.updatedAt).toLocaleDateString()}
+                  </TableCell>
+
+                  <TableCell className="px-6 py-4 text-right">
+                    <ActionMenu type="USER" data={user} disable={user._id} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
-      <Modal onClose={() => {}} isOpen={isOpen} className="lg:min-w-2xl">
-        <CreateUsers
-          onClose={() => {
-            setisOpen(false);
-          }}
-          organization={organizations}
-        />
+
+      {/* Modal */}
+      <Modal isOpen={isOpen} onClose={() => {}} className="lg:min-w-2xl">
+        <CreateUsers onClose={() => setisOpen(false)} organization={organizations} />
       </Modal>
     </>
   );

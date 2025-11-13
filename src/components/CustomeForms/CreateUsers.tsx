@@ -51,8 +51,7 @@ const CreateUsers: React.FC<ModalProps> = ({ onClose, organization }) => {
 
       if (!res.ok) {
         setErrorMsg(data.message || "Error creating user");
-      } else {
-        alert("✅ User Created Successfully");
+      } else {  
         onClose();
       }
     } catch (error) {

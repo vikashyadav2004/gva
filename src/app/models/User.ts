@@ -15,7 +15,6 @@ export interface IUser extends Document {
   organizationId?: mongoose.Types.ObjectId | null;
   isActive: boolean;
 }
-
 const UserSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },

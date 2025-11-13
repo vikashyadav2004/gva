@@ -1,11 +1,8 @@
 "use client";
-
-import Checkbox from "@/components/form/input/Checkbox";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import { EyeCloseIcon, EyeIcon } from "@/icons";
-import Link from "next/link";
+import { EyeCloseIcon, EyeIcon } from "@/icons"; 
 import Cookies from "js-cookie"; // ✅ added
 import React, { useState } from "react";
 
@@ -119,32 +116,18 @@ export default function SignInForm() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Checkbox checked onChange={() => {}} />
-                  <span className="text-gray-700 text-theme-sm dark:text-gray-400">
-                    Keep me logged in
-                  </span>
-                </div>
+              {/* <div className="flex items-center justify-end">
+                 
                 <Link href="/reset-password" className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400">
                   Forgot password?
                 </Link>
-              </div>
+              </div> */}
 
               <Button className="w-full py-2"  type="submit"  disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
             </div>
-          </form>
-
-          <div className="mt-5">
-            <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">
-                Sign Up
-              </Link>
-            </p>
-          </div>
+          </form> 
 
         </div>
       </div>

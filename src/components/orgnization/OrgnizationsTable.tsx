@@ -1,7 +1,8 @@
 "use client";
-import React from "react";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table"; 
+import React, { useEffect, useState } from "react";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table";
 import ActionMenu from "../ui/popover/ActionMenu";
+import { getUserNameById } from "@/server/data/conversion";   
 
 interface Organization {
   _id: string;
@@ -14,16 +15,34 @@ interface Organization {
 
 interface OrganizationsTableProps {
   orgs: Organization[];
-    // Optional callback to refresh org list after admin assigned
 }
 
 const OrganizationsTable: React.FC<OrganizationsTableProps> = ({ orgs }) => {
- 
+
+  const [adminNames, setAdminNames] = useState<Record<string, string>>({});
+
+  // Load admin user names
+  useEffect(() => {
+    async function loadAdminNames() {
+      const map: Record<string, string> = {};
+
+      for (const org of orgs) {
+        if (org.adminUserId) {
+          const name = await getUserNameById(org.adminUserId);
+          map[org.adminUserId] = name || "_";
+        }
+      }
+
+      setAdminNames(map);
+    }
+
+    loadAdminNames();
+  }, [orgs]);
+  console.log(orgs,"org")
 
   return (
-    <div className="border rounded-2xl overflow-auto">
+    <div className="border rounded-2xl overflow-auto min-h-[500px]">
       <Table>
-        {/* ✅ Table Header */}
         <TableHeader className="bg-gray-50 dark:bg-white/[0.04] border-b border-gray-200 dark:border-gray-800">
           <TableRow>
             <TableCell isHeader className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -33,7 +52,7 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({ orgs }) => {
               Organization Code
             </TableCell>
             <TableCell isHeader className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
-              Admin User
+              Admin 
             </TableCell>
             <TableCell isHeader className="px-5 text-start py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
               Updated At
@@ -44,7 +63,6 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({ orgs }) => {
           </TableRow>
         </TableHeader>
 
-        {/* ✅ Table Body */}
         <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
           {orgs.map((org, index) => (
             <TableRow
@@ -58,36 +76,35 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({ orgs }) => {
               <TableCell className="px-5 py-4 text-gray-800 font-medium dark:text-white/90">
                 {org.name}
               </TableCell>
+
               <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">
                 {org.code}
               </TableCell>
+
+              {/* ⬇️ ADMIN NAME IMPLEMENTED (NO CSS CHANGE) */}
               <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">
-                {org.adminUserId ?? "_"}
+                {org.adminUserId ? adminNames[org.adminUserId] ?? "_" : "_"}
               </TableCell>
+
               <TableCell className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">
                 {new Date(org.updatedAt || org.createdAt).toLocaleDateString()}
               </TableCell>
-              <TableCell className="px-5 py-4 text-right"> 
-                <ActionMenu globleId={org._id} disable={org.adminUserId} /> 
+
+              <TableCell className="px-5 py-4 text-right">
+                <ActionMenu type="ORG" data={org} disable={org.adminUserId} />
               </TableCell>
             </TableRow>
           ))}
 
-          {/* ✅ Empty State */}
           {orgs.length === 0 && (
             <TableRow>
-              <TableCell
-                className="text-center py-6 text-gray-500 text-sm dark:text-gray-400"
-              >
+              <TableCell className="text-center py-6 text-gray-500 text-sm dark:text-gray-400">
                 No organizations found
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
-
-      {/* ✅ Assign Admin Modal */}
-      
     </div>
   );
 };
