@@ -19,7 +19,8 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
   type,
   data,
 }) => {
-  console.log(disable,"disable"); 
+  console.log(disable,"disable");
+  
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,6 +66,8 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
       alert("Deleted Successfully!");
       window.location.reload();
     } catch (err) {
+      console.log(err);
+      
       alert("Server Error");
     }
   };
@@ -74,7 +77,7 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
       {/* MENU BUTTON */}
       <div ref={menuRef} className="relative inline-block text-left">
         <button
-          onClick={() =>  setOpen((prev) => !prev)}
+          onClick={() => setOpen((prev) => !prev)}
           className="p-2 rounded-lg text-sm text-black"
         >
           <MoreDotIcon />
@@ -169,6 +172,8 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
                     }, 1000);
                   }
                 } catch (err) {
+                  console.log(err);
+                  
                   setUpdateError("Server error");
                 }
 
@@ -274,6 +279,8 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
                     }, 1000);
                   }
                 } catch (error) {
+                  console.log(error);
+                  
                   setUpdateError("Server error");
                 }
 

@@ -1,6 +1,5 @@
 import type { Metadata } from "next"; 
-import React from "react"; 
-import MonthlySalesChart from "@/components/ecommerce/MonthlySalesChart";  
+import React from "react";  
 import LatestProtections from "@/components/ecommerce/RecentOrders";
 import MetricsCard from "@/components/admin/MetricsCard";
 import { getOrganizations } from "@/server/data/organization.data";

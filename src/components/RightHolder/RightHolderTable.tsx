@@ -66,7 +66,7 @@ export default function RightHolderTable({ data }: { data: RightHolder[] }) {
                   {/* ACTION MENU */}
                   <TableCell className="px-5 py-4 text-right">
                     <ActionMenu
-                      type="RIGHTHOLDER"
+                      type=""
                       data={rh}
                       disable={rh._id}
                     />

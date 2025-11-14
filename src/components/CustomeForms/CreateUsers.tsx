@@ -55,6 +55,8 @@ const CreateUsers: React.FC<ModalProps> = ({ onClose, organization }) => {
         onClose();
       }
     } catch (error) {
+      console.log(error);
+      
       setErrorMsg("Something went wrong");
     }
     setLoading(false);
