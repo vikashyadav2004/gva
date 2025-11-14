@@ -44,8 +44,8 @@ const navItems: NavItem[] = [
   },
   {
     icon: <BoxIcon/>,
-    name: "Protaction",
-    path: "/protaction",
+    name: "Protection",
+    path: "/protection",
   },
   {
     icon: <CheckCircleIcon/>,

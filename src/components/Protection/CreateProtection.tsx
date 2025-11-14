@@ -1,181 +1,188 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-
-import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
+import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 
-interface CreateProtectionProps {
-  organizations: { _id: string; name: string }[];
-  rightHolders: { _id: string; name: string; organizationId: string }[];
-  users: { _id: string; name: string; organizationId: string }[];
-  onSuccess?: () => void;
-}
-
-export default function CreateProtection({
-  organizations,
-  rightHolders,
-  users,
-  onSuccess,
-}: CreateProtectionProps) { 
+export default function CreateProtection({ organizations, users, rightHolders, onSuccess }: any) {
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [protectionType, setProtectionType] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
-  const [rightHolderId, setRightHolderId] = useState("");
-  const [createdByUserId, setCreatedByUserId] = useState("");
 
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [rightHolderId, setRightHolderId] = useState("");
+  const [type, setType] = useState("");
+  const [title, setTitle] = useState("");
+
+  const [organizationId, setOrganizationId] = useState("");
+  const [assignedUserId, setAssignedUserId] = useState("");
+
+  const [orgUsers, setOrgUsers] = useState([]);
+
+  const [image, setImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fullPreview, setFullPreview] = useState(false);
+
+  const role = Cookies.get("gva_role");
+  const isSuperAdmin = role === "SUPER_ADMIN";
+
+  // ⭐ PREVIEW IMAGE
+  const handleImageChange = (e: any) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setImage(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+
+    if (!organizationId) {
+      setOrgUsers([]);
+      return;
+    }
+
+    const filtered = users.filter(
+      (u: any) => String(u.organizationId) === String(organizationId)
+    );
+
+    setOrgUsers(filtered);
+  }, [organizationId]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMsg("");
 
-    try {
-      const token = Cookies.get("gva_token");
+    const token = Cookies.get("gva_token");
 
-      const fd = new FormData();
-      fd.append("title", title);
-      fd.append("protectionType", protectionType);
-      fd.append("organizationId", organizationId);
-      fd.append("rightHolderId", rightHolderId);
-      fd.append("createdByUserId", createdByUserId);
+    const fd = new FormData();
+    fd.append("rightHolderId", rightHolderId);
+    fd.append("type", type);
+    fd.append("title", title);
 
-      const res = await fetch("/api/protections", {
-        method: "POST",
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: fd,
-      });
+    fd.append("image", image as Blob);
 
-      const data = await res.json();
+    fd.append("organizationId", isSuperAdmin ? organizationId : "");
+    fd.append("assignedUserId", isSuperAdmin ? assignedUserId : "");
 
-      if (!res.ok) {
-        setErrorMsg(data.message || "Failed to create Protection");
-      } else {
-        if (onSuccess) onSuccess();
-        setOpen(false);
-      }
-    } catch (err) {
-      setErrorMsg("Server Error");
+    const res = await fetch("/api/protections", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.message);
+      return;
     }
 
-    setLoading(false);
+    onSuccess?.();
+    setOpen(false);
   };
 
   return (
     <>
-      <div className="flex justify-between items-center my-7">
+      <div className="flex justify-between items-center mb-7">
         <h2>Protections</h2>
-
-        <Button onClick={() => setOpen(true)} className="bg-brand-500 text-white">
-          + Create Protection
-        </Button>
+        <Button className="bg-brand-500 text-white" onClick={() => setOpen(true)}>
+        + Create Protection
+      </Button>
       </div>
 
       <Modal isOpen={open} onClose={() => setOpen(false)} className="lg:min-w-[700px]">
-        <div className="relative bg-white dark:bg-gray-900 rounded-3xl p-6 lg:p-10">
+        <div className="p-6">
 
-          {/* Close Button */}
-          <button
-            onClick={() => setOpen(false)}
-            className="absolute right-3 top-3 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full"
-          >
-            ✕
-          </button>
+          <h2 className="text-xl font-semibold mb-4">Create Protection</h2>
 
-          <h3 className="text-xl font-semibold mb-6">Create Protection</h3>
-
-          {errorMsg && <p className="text-red-500 text-sm mb-2">{errorMsg}</p>}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            <div>
-              <Label>Title</Label>
-              <Input
-                type="text"
-                placeholder="Enter title"
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label>Protection Type</Label>
-              <Input
-                type="text"
-                placeholder="Enter type"
-                onChange={(e) => setProtectionType(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label>Organization</Label>
-              <select
-                className="border rounded-lg px-3 h-11 w-full"
-                onChange={(e) => setOrganizationId(e.target.value)}
-              >
-                <option value="">-- Select Organization --</option>
-                {organizations.map((o) => (
-                  <option key={o._id} value={o._id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
 
             <div>
               <Label>Right Holder</Label>
               <select
-                className="border rounded-lg px-3 h-11 w-full"
+                className="border p-2 rounded w-full"
+                required
                 onChange={(e) => setRightHolderId(e.target.value)}
               >
-                <option value="">-- Select Holder --</option>
-                {rightHolders.map((r) => (
-                  <option key={r._id} value={r._id}>
-                    {r.name}
-                  </option>
+                <option value="">Select Right Holder</option>
+                {rightHolders.map((rh: any) => (
+                  <option key={rh._id} value={rh._id}>{rh.name}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <Label>Created By User</Label>
-              <select
-                className="border rounded-lg px-3 h-11 w-full"
-                onChange={(e) => setCreatedByUserId(e.target.value)}
-              >
-                <option value="">-- Select User --</option>
-                {users.map((u) => (
-                  <option key={u._id} value={u._id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
+              <Label>Type</Label>
+              <Input  onChange={(e) => setType(e.target.value)} />
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setOpen(false)}
-                type="button"
-                className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-800"
-              >
-                Close
-              </button>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 rounded-lg bg-brand-500 text-white"
-              >
-                {loading ? "Saving..." : "Save Protection"}
-              </button>
+            <div>
+              <Label>Title</Label>
+              <Input  onChange={(e) => setTitle(e.target.value)} />
             </div>
+
+            {/* ⭐ Image Upload */}
+            <div>
+              <Label>Upload Image</Label>
+              <input type="file" accept="image/*" required onChange={handleImageChange} />
+
+              {previewUrl && (
+                <div className="mt-3">
+                  <img
+                    src={previewUrl}
+                    alt="preview"
+                    className="h-24 w-24 object-cover rounded cursor-pointer border"
+                    onClick={() => setFullPreview(true)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ⭐ FULL SIZE PREVIEW MODAL */}
+            <Modal isOpen={fullPreview} onClose={() => setFullPreview(false)}>
+              <div className="p-6">
+                <img src={previewUrl!} className="w-full rounded" />
+              </div>
+            </Modal>
+
+            {isSuperAdmin && (
+              <>
+                <div>
+                  <Label>Organization</Label>
+                  <select
+                    className="border p-2 rounded w-full"
+                    required
+                    onChange={(e) => setOrganizationId(e.target.value)}
+                  >
+                    <option value="">Select Organization</option>
+                    {organizations.map((o: any) => (
+                      <option key={o._id} value={o._id}>{o.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <Label>Assign To User</Label>
+                  <select
+                    className="border p-2 rounded w-full"
+                    required
+                    onChange={(e) => setAssignedUserId(e.target.value)}
+                  >
+                    <option value="">Select User</option>
+                    {orgUsers.map((u: any) => (
+                      <option key={u._id} value={u._id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            <div className="flex justify-end">
+              <Button type="submit" className="bg-brand-500 text-white">
+                Save
+              </Button>
+            </div>
+
           </form>
         </div>
       </Modal>

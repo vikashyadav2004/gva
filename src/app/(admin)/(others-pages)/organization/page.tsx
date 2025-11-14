@@ -7,8 +7,8 @@ const OrganizationPage = async () => {
     const orgs = await getOrganizations();
     return (
         <> 
-            <div className="p-6">
-                <div className="flex justify-between gap-x-3 flex-wrap gap-y-5 items-center mb-8">
+            <div className="">
+                <div className="flex justify-between gap-x-3 flex-wrap gap-y-5 items-center mb-7">
                     <h1 className="text-lg font-semibold text-gray-800 dark:text-white">
                         Organizations
                     </h1>

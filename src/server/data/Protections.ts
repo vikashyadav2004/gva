@@ -6,7 +6,8 @@ import { cookies } from "next/headers";
 import { verifyJwt } from "@/lib/auth";
 
 /**
- * ⭐ Get all protections (SUPER_ADMIN only)
+ * ✅ Get all Protections (SUPER ADMIN)
+ * ❌ ORG_ADMIN/USER not allowed (same behavior as RightHolder)
  */
 export async function getProtections() {
   await connectDB();
@@ -17,16 +18,17 @@ export async function getProtections() {
 
   if (!session) return [];
 
-  // ⭐ SUPER_ADMIN → return ALL protections
+  // ⭐ SUPER ADMIN can see ALL protections
   if (session.role === "SUPER_ADMIN") {
     const protections = await Protection.find()
-      .populate("organizationId", "name code")
-      .populate("createdByUserId", "name email")
-      .populate("rightholderId", "name");
+      .populate("rightHolderId", "name")
+      .populate("organizationId", "name")
+      .populate("assignedUserId", "name email")
+      .populate("createdByUserId", "name email");
 
     return JSON.parse(JSON.stringify(protections));
   }
 
-  // ❌ Other roles cannot see protections (modify if needed)
+  // ❌ Other roles cannot fetch all protections
   return [];
 }

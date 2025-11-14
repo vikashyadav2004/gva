@@ -4,6 +4,7 @@ export interface IRightHolder extends Document {
   name: string;
   organizationId: mongoose.Schema.Types.ObjectId;
   createdByUserId: mongoose.Schema.Types.ObjectId;
+  approved:boolean
 }
 
 const RightHolderSchema = new Schema<IRightHolder>(
@@ -13,7 +14,8 @@ const RightHolderSchema = new Schema<IRightHolder>(
     organizationId: {
       type: Schema.Types.ObjectId,
       ref: "Organization",
-      required: true,
+      required: false,     // 🔥 NOT required
+      default: null,
     },
 
     createdByUserId: {
@@ -21,9 +23,15 @@ const RightHolderSchema = new Schema<IRightHolder>(
       ref: "User",
       required: true,
     },
+
+    approved: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
+
 
 const RightHolder: Model<IRightHolder> =
   mongoose.models.RightHolder ||

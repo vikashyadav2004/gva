@@ -7,32 +7,35 @@ import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
-import { IUser } from "@/app/models/User"; // ⭐ full user schema
+import { IUser } from "@/app/models/User";
 
-interface RightHolderFormProps {
+interface Props {
   organizations: { _id: string; name: string }[];
-  users: IUser[];              // ⭐ FULL USER OBJECT
+  users: IUser[];
   onSuccess?: () => void;
 }
 
-export default function CreateRightHolder({
-  organizations,
-  users,
-  onSuccess,
-}: RightHolderFormProps) {
+export default function CreateRightHolder({ organizations, users, onSuccess }: Props) {
   const [open, setOpen] = useState(false);
+
+  // form fields
   const [name, setName] = useState("");
   const [organizationId, setOrganizationId] = useState("");
   const [createdByUserId, setCreatedByUserId] = useState("");
 
-  const [orgUsers, setOrgUsers] = useState<IUser[]>([]); // ⭐ Filtered user list
-
+  const [orgUsers, setOrgUsers] = useState<IUser[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ⭐ Filter users when organization changes
+  // ⭐ ROLE from Cookie
+  const sessionRole = Cookies.get("gva_role"); // SUPER_ADMIN | ORG_ADMIN | USER
+
+  // ⭐ SUPER ADMIN sees simplified UI (no org, no user dropdown)
+  const isSuperAdmin = sessionRole === "SUPER_ADMIN";
+
+  // ⭐ Filter users by organization (only for non-super-admin)
   useEffect(() => {
-    if (!organizationId) {
+    if (!organizationId || isSuperAdmin) {
       setOrgUsers([]);
       setCreatedByUserId("");
       return;
@@ -45,7 +48,7 @@ export default function CreateRightHolder({
     );
 
     setOrgUsers(filtered);
-  }, [organizationId, users]);
+  }, [organizationId, users, isSuperAdmin]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -57,8 +60,13 @@ export default function CreateRightHolder({
 
       const fd = new FormData();
       fd.append("name", name);
-      fd.append("organizationId", organizationId);
-      fd.append("createdByUserId", createdByUserId); // ⭐ CORRECT USER ID
+
+      // ⭐ SUPER ADMIN → organizationId is null
+      fd.append("organizationId", isSuperAdmin ? "" : organizationId);
+
+      // ⭐ DO NOT TRUST FRONTEND createdByUserId
+      // backend uses session._id
+      fd.append("createdByUserId", createdByUserId || "");
 
       const res = await fetch("/api/rightholders", {
         method: "POST",
@@ -109,8 +117,6 @@ export default function CreateRightHolder({
       {/* MODAL */}
       <Modal isOpen={open} onClose={() => setOpen(false)} className="lg:min-w-[700px]">
         <div className="relative w-full bg-white dark:bg-gray-900 rounded-3xl p-6 lg:p-10">
-
-          {/* Close Button */}
           <button
             onClick={() => setOpen(false)}
             className="absolute right-3 top-3 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full"
@@ -123,63 +129,67 @@ export default function CreateRightHolder({
           {errorMsg && <p className="text-red-500 text-sm mb-2">{errorMsg}</p>}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-
             {/* NAME INPUT */}
             <div>
               <Label>Name</Label>
               <Input
                 type="text"
-                placeholder="Right holder name"
+                placeholder="Right holder name" 
                 onChange={(e) => setName(e.target.value)}
-                className="h-11 w-full" 
+                className="h-11 w-full"
               />
             </div>
 
-            {/* ORGANIZATION DROPDOWN */}
-            <div>
-              <Label>Organization</Label>
-              <select
-                className="h-11 w-full border px-3 rounded-lg dark:bg-gray-800"
-                required
-                value={organizationId}
-                onChange={(e) => setOrganizationId(e.target.value)}
-              >
-                <option value="">-- Select Organization --</option>
+            {/* ONLY NON-SUPER-ADMIN sees these fields */}
+            {!isSuperAdmin && (
+              <>
+                {/* ORGANIZATION ⬇ */}
+                <div>
+                  <Label>Organization</Label>
+                  <select
+                    className="h-11 w-full border px-3 rounded-lg dark:bg-gray-800"
+                    required
+                    value={organizationId}
+                    onChange={(e) => setOrganizationId(e.target.value)}
+                  >
+                    <option value="">-- Select Organization --</option>
 
-                {organizations.map((org) => (
-                  <option key={org._id} value={org._id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+                    {organizations.map((org) => (
+                      <option key={org._id} value={org._id}>
+                        {org.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* USER DROPDOWN (FILTERED BY ORG) */}
-            <div>
-              <Label>Select User</Label>
+                {/* USER DROPDOWN (filtered) */}
+                <div>
+                  <Label>Select User</Label>
 
-              <select
-                disabled={orgUsers.length === 0}
-                className="h-11 w-full border px-3 rounded-lg dark:bg-gray-800 disabled:opacity-60"
-                required
-                value={createdByUserId}
-                onChange={(e) => setCreatedByUserId(e.target.value)}
-              >
-                <option value="">-- Select User --</option>
+                  <select
+                    disabled={orgUsers.length === 0}
+                    className="h-11 w-full border px-3 rounded-lg dark:bg-gray-800 disabled:opacity-60"
+                    required
+                    value={createdByUserId}
+                    onChange={(e) => setCreatedByUserId(e.target.value)}
+                  >
+                    <option value="">-- Select User --</option>
 
-                {orgUsers.map((user) => (
-                  <option key={user._id.toString()} value={user._id.toString()}>
-                    {user.name} ({user.email})
-                  </option>
-                ))}
-              </select>
+                    {orgUsers.map((user) => (
+                      <option key={user._id.toString()} value={user._id.toString()}>
+                        {user.name} ({user.email})
+                      </option>
+                    ))}
+                  </select>
 
-              {organizationId && orgUsers.length === 0 && (
-                <p className="text-xs text-red-500 mt-1">
-                  No users found for this organization.
-                </p>
-              )}
-            </div>
+                  {organizationId && orgUsers.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      No users found for this organization.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* BUTTONS */}
             <div className="flex justify-end gap-3 mt-6">
@@ -199,7 +209,6 @@ export default function CreateRightHolder({
                 {loading ? "Saving..." : "Save Right Holder"}
               </button>
             </div>
-
           </form>
         </div>
       </Modal>

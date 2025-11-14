@@ -1,23 +1,28 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IProtection extends Document {
-  title: string;                         // ⭐ ADD THIS
-  organizationId: mongoose.Types.ObjectId;
-  createdByUserId: mongoose.Types.ObjectId;
-  rightholderId: mongoose.Types.ObjectId;
-
-  protectionType: string;
-  regReference: string;
-  designation: string;
-  oePartNo: string;
-  imagePath?: string;
+  rightHolderId: mongoose.Schema.Types.ObjectId;
+  organizationId: mongoose.Schema.Types.ObjectId | null;
+  createdByUserId: mongoose.Schema.Types.ObjectId;
+  assignedUserId: mongoose.Schema.Types.ObjectId | null;
+  type: string;
+  title: string;
+  imageUrl: string;  // ⭐ NEW
 }
 
 const ProtectionSchema = new Schema<IProtection>(
   {
-    title: {
-      type: String,
+    rightHolderId: {
+      type: Schema.Types.ObjectId,
+      ref: "RightHolder",
       required: true,
+    },
+
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: false,
+      default: null,
     },
 
     createdByUserId: {
@@ -26,42 +31,17 @@ const ProtectionSchema = new Schema<IProtection>(
       required: true,
     },
 
-    organizationId: {
+    assignedUserId: {
       type: Schema.Types.ObjectId,
-      ref: "Organization",
-      required: true,
-    },
-
-    rightholderId: {
-      type: Schema.Types.ObjectId,
-      ref: "RightHolder",
-      required: true,
-    },
-
-    protectionType: {
-      type: String,
-      required: true,
-    },
-
-    regReference: {
-      type: String,
-      required: true,
-    },
-
-    designation: {
-      type: String,
-      required: true,
-    },
-
-    oePartNo: {
-      type: String,
-      required: true,
-    },
-
-    imagePath: {
-      type: String,
+      ref: "User",
+      required: false,
       default: null,
     },
+
+    type: { type: String, required: true },
+    title: { type: String, required: true },
+
+    imageUrl: { type: String, required: true }, // ⭐ FILE LOCATION STORED HERE
   },
   { timestamps: true }
 );

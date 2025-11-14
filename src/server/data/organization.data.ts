@@ -17,7 +17,8 @@ export async function getOrganizations() {
 
   // ✅ SUPER ADMIN → return all orgs
   if (session.role === "SUPER_ADMIN") {
-    const orgs = await Organization.find()
+   const orgs = await Organization.find().sort({ createdAt: -1 });
+
     return JSON.parse(JSON.stringify(orgs));
   }
 

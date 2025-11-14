@@ -11,10 +11,13 @@ const page = async() => {
    const user = await getUsers();
    const RightHolders = await getRightHolders();
    const Protections = await getProtections();
+
+   console.log(Protections,'Protections');
+   
   return (
     <div>
       <CreateProtection organizations={orgs} rightHolders={RightHolders} users={user}/>
-      <ProtectionTable   protections={Protections} />
+      <ProtectionTable   data={Protections} />
     </div>
   );
 }

@@ -19,8 +19,7 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
   type,
   data,
 }) => {
-  console.log(disable,"disable");
-  
+  console.log(disable,"disable"); 
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,7 +74,7 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
       {/* MENU BUTTON */}
       <div ref={menuRef} className="relative inline-block text-left">
         <button
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={() =>  setOpen((prev) => !prev)}
           className="p-2 rounded-lg text-sm text-black"
         >
           <MoreDotIcon />
