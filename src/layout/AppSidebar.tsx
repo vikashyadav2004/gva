@@ -264,12 +264,12 @@ const AppSidebar: React.FC = () => {
           {isExpanded || isMobileOpen ? (
             // {isExpanded || isHovered || isMobileOpen ? (
             <div className="flex items-center gap-5">
-              <Image src="/images/logo/logo-icon.svg" width={32} height={32} alt="Logo" />
+              <Image src="/images/logo/gva-logo.webp" width={60} height={60} alt="Logo" />
 
               <p className="text-[26px] whitespace-nowrap">GVA e.V. DSDB</p>
             </div>
           ) : (
-            <Image src="/images/logo/logo-icon.svg" width={32} height={32} alt="Logo" />
+            <Image src="/images/logo/gva-logo.webp" width={60} height={60} alt="Logo" />
           )}
         </Link>
       </div>
