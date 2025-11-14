@@ -79,6 +79,7 @@ export default function CreateProtection({ organizations, users, rightHolders, o
 
     onSuccess?.();
     setOpen(false);
+       setTimeout(() => window.location.reload(), 10);
   };
 
   return (

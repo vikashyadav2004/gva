@@ -111,7 +111,7 @@ const UsersData: React.FC<OrganizationListProps> = ({ organizations, users }) =>
                 >
                   No users found 
               </div>:
-      <div className="overflow-auto border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm bg-white dark:bg-gray-900">
+      <div className="overflow-auto border min-h[500px] border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm bg-white dark:bg-gray-900">
         <Table>
           <TableHeader className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
             <TableRow>

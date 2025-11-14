@@ -70,7 +70,7 @@ export default function ProtectionTable({ data }: { data: Protection[] }) {
 
                 {/* Right Holder */}
                 <TableCell className="px-5 py-4">
-                  {prot.rightHolderId?.name ?? "—"}
+                  {prot.rightHolderId?.name?? "—"}
                 </TableCell>
 
                 {/* Organization */}

@@ -20,7 +20,8 @@ export async function getRightHolders() {
 
   // ⭐ SUPER ADMIN can see ALL RightHolders
   if (session.role === "SUPER_ADMIN") {
-    const rightHolders = await RightHolder.find() 
+    const rightHolders = await RightHolder.find()
+    // .populate("createdByUserId","name")
     return JSON.parse(JSON.stringify(rightHolders));
   }
 

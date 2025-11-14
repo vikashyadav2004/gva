@@ -8,7 +8,7 @@ interface RightHolder {
   _id: string;
   name: string;
   organizationId: { _id: string; name: string }  
-  createdByUserId: { _id: string; name: string } 
+  createdByUserId: string; 
   approved: boolean;
   createdAt: string;
   updatedAt: string;
@@ -48,7 +48,7 @@ export default function RightHolderTable({ data }: { data: RightHolder[] }) {
 
                   {/* ⭐ SAFE CREATED BY USER DISPLAY */}
                   <TableCell className="px-5 py-4">
-                    {rh.createdByUserId?.name ?? "—"}
+                    {rh.createdByUserId ?? "—"}
                   </TableCell>
 
                   {/* ⭐ DISPLAY APPROVED STATUS */}

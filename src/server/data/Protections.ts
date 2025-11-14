@@ -23,6 +23,7 @@ export async function getProtections() {
     const protections = await Protection.find() 
       .populate("organizationId", "name")
       .populate("assignedUserId", "name")
+      .populate("rightHolderId", "name")
 
     return JSON.parse(JSON.stringify(protections));
   }

@@ -84,14 +84,17 @@ export default function CreateRightHolder({ organizations, users, onSuccess }: P
         return;
       }
 
-      if (onSuccess) onSuccess();
-
+      if (onSuccess) {
+        onSuccess()
+      };
+      
       // reset
       setOpen(false);
       setName("");
       setOrganizationId("");
       setCreatedByUserId("");
       setOrgUsers([]);
+      setTimeout(() => window.location.reload(), 10);
     } catch (err) {
       console.log(err);
       setErrorMsg("Server Error");
