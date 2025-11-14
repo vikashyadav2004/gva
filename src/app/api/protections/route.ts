@@ -3,9 +3,7 @@ import { NextResponse } from "next/server";
 import Protection from "@/app/models/Protection";
 import { verifyJwt } from "@/lib/auth";
 import Organization from "@/app/models/Organization";
-import User from "@/app/models/User";
-import fs from "fs";
-import path from "path";
+import User from "@/app/models/User"; 
 
 export async function POST(req: Request) {
   try {
@@ -25,21 +23,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
-    // ⭐ Save image to /public/uploads/protections/
-    const uploadsDir = path.join(process.cwd(), "public/uploads/protections");
-
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    const fileExt = file.name.split(".").pop();
-    const filename = `prot-${Date.now()}.${fileExt}`;
-    const filepath = path.join(uploadsDir, filename);
-
+    // ⭐ Convert image to Base64 (NO FILESYSTEM)
     const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(filepath, buffer);
-
-    const imageUrl = `/uploads/protections/${filename}`;
+    const base64Image = `data:${file.type};base64,${buffer.toString("base64")}`;
 
     // ⭐ AUTH
     const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -51,7 +37,7 @@ export async function POST(req: Request) {
 
     const createdByUserId = session._id;
 
-    // ⭐ SUPER_ADMIN WORKFLOW
+    // ⭐ SUPER ADMIN WORKFLOW
     if (session.role === "SUPER_ADMIN") {
       const organizationId = organizationIdRaw || null;
       const assignedUserId = assignedUserIdRaw || null;
@@ -80,13 +66,13 @@ export async function POST(req: Request) {
         organizationId,
         createdByUserId,
         assignedUserId,
-        imageUrl,
+        imageUrl: base64Image, // ⭐ STORED BASE64
       });
 
       return NextResponse.json({ message: "Protection created", data: prot });
     }
 
-    // ⭐ ORG_ADMIN / USER WORKFLOW
+    // ⭐ ORG_ADMIN / USER workflow
     const organizationId = session.organizationId;
 
     if (!organizationId) {
@@ -103,10 +89,102 @@ export async function POST(req: Request) {
       organizationId,
       createdByUserId,
       assignedUserId: createdByUserId,
-      imageUrl,
+      imageUrl: base64Image,
     });
 
     return NextResponse.json({ message: "Protection created", data: prot });
+
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}
+
+//   delete protaction 
+
+export async function DELETE(req: Request) {
+  try {
+    await connectDB();
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ message: "Protection ID required" }, { status: 400 });
+    }
+
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    const session = token ? await verifyJwt(token) : null;
+
+    if (!session) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    await Protection.findByIdAndDelete(id);
+
+    return NextResponse.json({ message: "Protection deleted" });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}
+
+
+// update protaction 
+
+export async function PUT(req: Request) {
+  try {
+    await connectDB();
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ message: "Protection ID required" }, { status: 400 });
+    }
+
+    // Read FormData (supports image)
+    const form = await req.formData();
+
+    const type = form.get("type") as string | null;
+    const title = form.get("title") as string | null;
+    const rightHolderId = form.get("rightHolderId") as string | null;
+    const organizationIdRaw = form.get("organizationId") as string | null;
+    const assignedUserIdRaw = form.get("assignedUserId") as string | null;
+
+    const file = form.get("image") as File | null;
+
+    // AUTH
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    const session = token ? await verifyJwt(token) : null;
+
+    if (!session) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const updateData: any = {};
+
+    if (type) updateData.type = type;
+    if (title) updateData.title = title;
+    if (rightHolderId) updateData.rightHolderId = rightHolderId;
+
+    // SUPER ADMIN CAN MOVE PROTECTION
+    if (session.role === "SUPER_ADMIN") {
+      if (organizationIdRaw) updateData.organizationId = organizationIdRaw;
+      if (assignedUserIdRaw) updateData.assignedUserId = assignedUserIdRaw;
+    }
+
+    // Handling image update
+    if (file) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+      updateData.imageUrl = base64;
+    }
+
+    const updated = await Protection.findByIdAndUpdate(id, updateData, { new: true });
+
+    return NextResponse.json({ message: "Protection updated", data: updated });
+
   } catch (error) {
     console.log(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

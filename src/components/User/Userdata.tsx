@@ -66,7 +66,7 @@ const UsersData: React.FC<OrganizationListProps> = ({ organizations, users }) =>
     loadOrgNames();
   }, [users]);
 
-  const filteredUsers =
+  const filteredUsers=
     selectedOrg === ""
       ? users
       : users.filter((u) => u.organizationId === selectedOrg);
@@ -105,6 +105,12 @@ const UsersData: React.FC<OrganizationListProps> = ({ organizations, users }) =>
       </div>
 
       {/* Table Wrapper */}
+         {filteredUsers.length === 0 ?  
+              <div  
+                  className="flex justify-center w-full py-4 rounded bg-white"
+                >
+                  No users found 
+              </div>:
       <div className="overflow-auto border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm bg-white dark:bg-gray-900">
         <Table>
           <TableHeader className="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
@@ -131,20 +137,10 @@ const UsersData: React.FC<OrganizationListProps> = ({ organizations, users }) =>
                 Actions
               </TableCell>
             </TableRow>
-          </TableHeader>
-
+          </TableHeader> 
           <TableBody>
-            {filteredUsers.length === 0 && (
-              <TableRow>
-                <TableCell 
-                  className="text-center py-6 text-gray-500 text-sm dark:text-gray-400"
-                >
-                  No users found
-                </TableCell>
-              </TableRow>
-            )}
 
-            {filteredUsers.map((user, index) => {
+            {filteredUsers?.map((user, index) => {
               if (user.role === "SUPER_ADMIN") return null;
 
               return (
@@ -189,7 +185,7 @@ const UsersData: React.FC<OrganizationListProps> = ({ organizations, users }) =>
                   </TableCell>
 
                   <TableCell className="px-6 py-4 text-right">
-                    <ActionMenu type="USER" data={user} disable={user._id} />
+                    <ActionMenu type="USER" data={user} />
                   </TableCell>
                 </TableRow>
               );
@@ -197,6 +193,7 @@ const UsersData: React.FC<OrganizationListProps> = ({ organizations, users }) =>
           </TableBody>
         </Table>
       </div>
+           }
 
       {/* Modal */}
       <Modal isOpen={isOpen} onClose={() => {}} className="lg:min-w-2xl">

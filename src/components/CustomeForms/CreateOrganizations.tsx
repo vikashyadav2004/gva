@@ -50,6 +50,7 @@ const CreateOrganizations: React.FC<CreateOrganizationsProps> = ({ onSuccess }) 
       setOpen(false);
       setName("");
       setCode("");
+      setTimeout(() => window.location.reload(), 10);
     } catch (err) {
       console.error(err);
       setErrorMsg("Server error");

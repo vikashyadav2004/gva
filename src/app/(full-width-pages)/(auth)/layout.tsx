@@ -17,7 +17,7 @@ export default function AuthLayout({
               
               <div className="flex flex-col items-center  ">
                
-                <Image src="images/logo/logo-icon.svg" alt="logo" width={40} height={40} />
+                <Image src="/images/logo/logo-icon.svg" alt="logo" width={40} height={40} />
                   <p className="text-[36px] text-white">GVA e.V. DSDB</p> 
                 <p className="text-center text-gray-400 dark:text-white/60 max-w-2xs">
                   Powerful Admin Dashboard designed for smooth management and insights.

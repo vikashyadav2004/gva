@@ -6,351 +6,413 @@ import Cookies from "js-cookie";
 import { Modal } from "../modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
-import Select from "@/components/form/Select";
 
 interface ActionMenuProps {
-  data: any; // user, org, or rightholder object
-  type: "USER" | "ORG" | "RIGHTHOLDER" |""; // ⭐ ADDED RIGHTHOLDER
-  disable?: string | null;
+  data: any;
+  type: "ORG" | "USER" | "PROTECTION" | "RIGHTHOLDER";
 }
 
-const ActionMenu: React.FC<ActionMenuProps> = ({
-  disable = null,
-  type,
-  data,
-}) => {
-  console.log(disable,"disable");
-  
+const ActionMenu: React.FC<ActionMenuProps> = ({ data, type }) => {
+   
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // Edit modal
   const [editModal, setEditModal] = useState(false);
-  const [editData, setEditData] = useState<any>(null);
+  const [editData, setEditData] = useState<any>(data);
 
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [updateError, setUpdateError] = useState("");
-  const [updateSuccess, setUpdateSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
-  // CLOSE DROPDOWN WHEN CLICK OUTSIDE  
+  // Protection image
+  const [newImage, setNewImage] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  /* --------------------------------------------------------
+      CLOSE DROPDOWN
+  ----------------------------------------------------------- */
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+    const handler = (e: any) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // DELETE HANDLER (COMMON FOR USER, ORG, RIGHTHOLDER)
+  /* --------------------------------------------------------
+      DELETE HANDLER BY TYPE
+  ----------------------------------------------------------- */
   const handleDelete = async () => {
     try {
       const token = Cookies.get("gva_token");
 
       let url = "";
-      if (type === "RIGHTHOLDER") url = `/api/rightholders/${data._id}`;
-      if (type === "USER") url = `/api/users/${data._id}`;
-      if (type === "ORG") url = `/api/organizations/${data._id}`;
+      if (type === "ORG") url = `/api/organizations?id=${data._id}`;
+      else if (type === "USER") url = `/api/users/create?id=${data._id}`;
+      else if (type === "PROTECTION") url = `/api/protections?id=${data._id}`;
+      else if (type === "RIGHTHOLDER") url = `/api/rightholders?id=${data._id}`;
 
       const res = await fetch(url, {
         method: "DELETE",
         headers: { Authorization: token ? `Bearer ${token}` : "" },
       });
 
-      if (!res.ok) {
-        alert("Failed to delete!");
-        return;
-      }
-
-      alert("Deleted Successfully!");
+      await res.json();
       window.location.reload();
     } catch (err) {
       console.log(err);
-      
-      alert("Server Error");
     }
   };
 
+  /* --------------------------------------------------------
+      UPDATE ORG
+  ----------------------------------------------------------- */
+  const updateOrg = async () => {
+    const token = Cookies.get("gva_token");
+
+    const res = await fetch(`/api/organizations?id=${data._id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify({
+        name: editData.name,
+        code: editData.code,
+      }),
+    });
+
+    return { ok: res.ok, response: await res.json() };
+  };
+
+  /* --------------------------------------------------------
+      UPDATE USER
+  ----------------------------------------------------------- */
+  const updateUser = async () => {
+    const token = Cookies.get("gva_token");
+
+    const  body: any = {
+      name: editData.name,
+      email: editData.email,
+      role: editData.role,
+    };
+
+    if (editData.password) body.password = editData.password;
+
+    const res = await fetch(`/api/users/create?id=${data._id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify(body),
+    });
+
+    return { ok: res.ok, response: await res.json() };
+  };
+
+  /* --------------------------------------------------------
+      UPDATE PROTECTION
+  ----------------------------------------------------------- */
+  const updateProtection = async () => {
+    const token = Cookies.get("gva_token");
+
+    const fd = new FormData();
+    fd.append("title", editData.title);
+    fd.append("type", editData.type);
+    fd.append("rightHolderId", editData.rightHolderId?._id || editData.rightHolderId);
+
+    if (newImage) fd.append("image", newImage);
+
+    const res = await fetch(`/api/protections?id=${data._id}`, {
+      method: "PUT",
+      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      body: fd,
+    });
+
+    return { ok: res.ok, response: await res.json() };
+  };
+
+  /* --------------------------------------------------------
+      UPDATE RIGHTHOLDER
+  ----------------------------------------------------------- */
+  const updateRightHolder = async () => {
+    const token = Cookies.get("gva_token");
+
+    const fd = new FormData();
+    fd.append("name", editData.name);
+
+    // organizationId can be null or id
+    fd.append(
+      "organizationId",
+      editData.organizationId?._id || editData.organizationId || ""
+    );
+
+    const res = await fetch(`/api/rightholders?id=${data._id}`, {
+      method: "PUT",
+      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      body: fd,
+    });
+
+    return { ok: res.ok, response: await res.json() };
+  };
+
+  /* --------------------------------------------------------
+      SUBMIT HANDLER
+  ----------------------------------------------------------- */
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setLoading(true);
+    setMsg("");
+
+    let result;
+
+    if (type === "ORG") result = await updateOrg();
+    else if (type === "USER") result = await updateUser();
+    else if (type === "PROTECTION") result = await updateProtection();
+    else result = await updateRightHolder();
+
+    if (!result.ok) setMsg(result.response.message || "Update failed");
+    else {
+      setMsg("Updated successfully!");
+      setTimeout(() => window.location.reload(), 800);
+    }
+
+    setLoading(false);
+  };
+
+  /* --------------------------------------------------------
+      UI
+  ----------------------------------------------------------- */
   return (
     <>
-      {/* MENU BUTTON */}
-      <div ref={menuRef} className="relative inline-block text-left">
-        <button
-          onClick={() => setOpen((prev) => !prev)}
-          className="p-2 rounded-lg text-sm text-black"
-        >
+      {/* BUTTON */}
+      <div ref={menuRef} className="relative inline-block">
+        <button onClick={() => setOpen(!open)} className="p-2 rounded-lg">
           <MoreDotIcon />
         </button>
 
-        {/* DROPDOWN MENU */}
         {open && (
-          <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg border border-gray-200 z-50">
-            <div className="py-2 text-sm text-gray-700">
-              
-              {/* DELETE */}
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  handleDelete();
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100"
-              >
-                <TrashBinIcon className="text-gray-500" />
-                Delete
-              </button>
+          <div className="absolute right-0 mt-2 w-48 bg-white border shadow-lg rounded-xl z-50">
+            <button
+              onClick={() => {
+                setOpen(false);
+                setEditModal(true);
+              }}
+              className="flex w-full gap-2 px-4 py-2 hover:bg-gray-100"
+            >
+              <PencilIcon className="text-gray-500" /> Edit
+            </button>
 
-              {/* EDIT */}
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setEditModal(true);
-                  setEditData(data);
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100"
-              >
-                <PencilIcon className="text-gray-500" />
-                Edit
-              </button>
-
-            </div>
+            <button
+              onClick={() => {
+                setOpen(false);
+                handleDelete();
+              }}
+              className="flex w-full gap-2 px-4 py-2 hover:bg-gray-100"
+            >
+              <TrashBinIcon className="text-gray-500" /> Delete
+            </button>
           </div>
         )}
       </div>
 
-      {/* ========================================================
-          RIGHTHOLDER EDIT MODAL
-         ======================================================== */}
-      {type === "RIGHTHOLDER" && (
-        <Modal isOpen={editModal} onClose={() => setEditModal(false)} className="lg:min-w-[600px]">
-          <div className="relative w-full rounded-3xl bg-white dark:bg-gray-900 p-5 lg:p-10 text-start">
+      {/* MODAL */}
+      <Modal isOpen={editModal} onClose={() => setEditModal(false)} className="lg:min-w-[600px]">
+        <div className="relative bg-white rounded-3xl p-6 lg:p-10">
 
-            <button
-              onClick={() => setEditModal(false)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
+          <button
+            onClick={() => setEditModal(false)}
+            className="absolute right-3 top-3 text-gray-500"
+          >
+            ✕
+          </button>
 
-            <h4 className="text-lg font-medium mb-6">Edit Right Holder</h4>
+          <h4 className="text-lg font-medium mb-6 text-left">
+            Edit{" "}
+            {type === "ORG"
+              ? "Organization"
+              : type === "USER"
+              ? "User"
+              : type === "RIGHTHOLDER"
+              ? "Right Holder"
+              : "Protection"}
+          </h4>
 
-            {updateError && <p className="text-red-500 text-sm mb-2">{updateError}</p>}
-            {updateSuccess && <p className="text-green-500 text-sm mb-2">{updateSuccess}</p>}
+          {msg && (
+            <p className={`text-sm mb-2 ${msg.includes("success") ? "text-green-500" : "text-red-500"}`}>
+              {msg}
+            </p>
+          )}
 
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setUpdateLoading(true);
-                setUpdateError("");
-                setUpdateSuccess("");
+          <form onSubmit={handleSubmit} className="space-y-5 text-left">
+            {/* --------------------------------------------------
+                ORG / USER / PROTECTION / RIGHTHOLDER FIELDS
+            --------------------------------------------------- */}
 
-                try {
-                  const token = Cookies.get("gva_token");
+            {/* NAME / TITLE */}
+            <div className="text-left">
+              <Label>
+                {type === "PROTECTION"
+                  ? "Title"
+                  : type === "RIGHTHOLDER"
+                  ? "Right Holder Name"
+                  : "Name"}
+              </Label>
 
-                  const fd = new FormData();
-                  fd.append("name", editData.name);
-                  fd.append("organizationId", editData.organizationId);
-
-                  const res = await fetch(`/api/rightholders/${editData._id}`, {
-                    method: "PUT",
-                    headers: {
-                      Authorization: token ? `Bearer ${token}` : "",
-                    },
-                    body: fd,
-                  });
-
-                  const response = await res.json();
-
-                  if (!res.ok) {
-                    setUpdateError(response.message || "Update failed");
-                  } else {
-                    setUpdateSuccess("Updated successfully!");
-
-                    setTimeout(() => {
-                      setEditModal(false);
-                      window.location.reload();
-                    }, 1000);
-                  }
-                } catch (err) {
-                  console.log(err);
-                  
-                  setUpdateError("Server error");
+              <Input
+                type="text"
+                defaultValue={
+                  type === "PROTECTION"
+                    ? editData.title
+                    : editData.name
                 }
-
-                setUpdateLoading(false);
-              }}
-            >
-              <div className="space-y-5">
-
-                <div>
-                  <Label>Name</Label>
-                  <Input
-                    type="text"
-                    defaultValue={editData?.name}
-                    onChange={(e) =>
-                      setEditData({ ...editData, name: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label>Organization</Label>
-                  <Input
-                    type="text"
-                    defaultValue={editData?.organizationId}
-                    onChange={(e) =>
-                      setEditData({ ...editData, organizationId: e.target.value })
-                    }
-                  />
-                </div>
-
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setEditModal(false)}
-                  className="px-4 py-3 text-sm rounded-lg bg-white text-gray-700 ring-1 ring-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={updateLoading}
-                  className="px-4 py-3 text-sm rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:bg-brand-300"
-                >
-                  {updateLoading ? "Updating..." : "Update"}
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </Modal>
-      )}
-
-      {/* ========================================================
-          USER EDIT MODAL (YOUR EXISTING CODE — NOT MODIFIED)
-         ======================================================== */}
-      {type === "USER" && (
-        <Modal isOpen={editModal} onClose={() => setEditModal(false)} className="lg:min-w-[600px]">
-          <div className="relative w-full rounded-3xl bg-white dark:bg-gray-900 p-5 lg:p-10 text-start">
-            <button
-              onClick={() => setEditModal(false)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-
-            <h4 className="text-lg font-medium mb-6 text-gray-800 dark:text-white/90">
-              Edit User
-            </h4>
-
-            {updateError && <p className="text-red-500 text-sm mb-2">{updateError}</p>}
-            {updateSuccess && <p className="text-green-500 text-sm mb-2">{updateSuccess}</p>}
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setUpdateLoading(true);
-                setUpdateError("");
-                setUpdateSuccess("");
-
-                try {
-                  const token = Cookies.get("gva_token");
-
-                  const res = await fetch(`/api/users/${editData._id}`, {
-                    method: "PUT",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: token ? `Bearer ${token}` : "",
-                    },
-                    body: JSON.stringify(editData),
-                  });
-
-                  const response = await res.json();
-
-                  if (!res.ok) {
-                    setUpdateError(response.message || "Update failed");
-                  } else {
-                    setUpdateSuccess("User updated successfully!");
-
-                    setTimeout(() => {
-                      setEditModal(false);
-                    }, 1000);
-                  }
-                } catch (error) {
-                  console.log(error);
-                  
-                  setUpdateError("Server error");
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    [type === "PROTECTION" ? "title" : "name"]: e.target.value,
+                  })
                 }
+              />
+            </div>
 
-                setUpdateLoading(false);
-              }}
-            >
-              <div className="space-y-5">
-                <div>
-                  <Label>Name</Label>
-                  <Input
-                    type="text"
-                    defaultValue={editData?.name}
-                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                  />
-                </div>
+            {/* ORG FIELDS */}
+            {type === "ORG" && (
+              <div>
+                <Label>Code</Label>
+                <Input
+                  type="text"
+                  defaultValue={editData.code}
+                  onChange={(e) =>
+                    setEditData({ ...editData, code: e.target.value })
+                  }
+                />
+              </div>
+            )}
 
+            {/* USER FIELDS */}
+            {type === "USER" && (
+              <>
                 <div>
                   <Label>Email</Label>
                   <Input
                     type="email"
-                    defaultValue={editData?.email}
-                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                    defaultValue={editData.email}
+                    onChange={(e) =>
+                      setEditData({ ...editData, email: e.target.value })
+                    }
                   />
                 </div>
 
                 <div>
                   <Label>Role</Label>
-                  <Select
-                    className="w-full"
-                    defaultValue={editData?.role}
-                    options={[
-                      { value: "ORG_ADMIN", label: "Org Admin" },
-                      { value: "USER", label: "User" },
-                    ]}
-                    onChange={(val) => setEditData({ ...editData, role: val })}
-                    placeholder="Select role"
-                  />
+                  <select
+                    defaultValue={editData.role}
+                    className="border p-2 rounded-lg w-full"
+                    onChange={(e) =>
+                      setEditData({ ...editData, role: e.target.value })
+                    }
+                  >
+                    <option value="USER">User</option>
+                    <option value="ORG_ADMIN">Org Admin</option>
+                  </select>
                 </div>
 
                 <div>
                   <Label>New Password (optional)</Label>
                   <Input
                     type="password"
-                    placeholder="Enter new password"
-                    onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                    onChange={(e) =>
+                      setEditData({ ...editData, password: e.target.value })
+                    }
                   />
                 </div>
-              </div>
+              </>
+            )}
 
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setEditModal(false)}
-                  className="px-4 py-3 text-sm rounded-lg bg-white text-gray-700 ring-1 ring-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={updateLoading}
-                  className="px-4 py-3 text-sm rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:bg-brand-300"
-                >
-                  {updateLoading ? "Updating..." : "Update User"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </Modal>
-      )}
+            {/* RIGHTHOLDER FIELDS */}
+            {type === "RIGHTHOLDER" && (
+              <>
+                <div>
+                  <Label>Organization ID (optional)</Label>
+                  <Input
+                    type="text"
+                    defaultValue={
+                      editData.organizationId?._id || editData.organizationId || ""
+                    }
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        organizationId: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </>
+            )}
 
+            {/* PROTECTION FIELDS */}
+            {type === "PROTECTION" && (
+              <>
+                <div>
+                  <Label>Type</Label>
+                  <Input
+                    type="text"
+                    defaultValue={editData.type}
+                    onChange={(e) =>
+                      setEditData({ ...editData, type: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Image</Label>
+
+                  {previewImage || editData.imageUrl ? (
+                    <img
+                      src={previewImage || editData.imageUrl}
+                      className="h-32 w-32 object-cover rounded border"
+                    />
+                  ) : null}
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="mt-2"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setNewImage(file);
+                        setPreviewImage(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* BUTTONS */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setEditModal(false)}
+                className="px-4 py-3 rounded-lg bg-gray-200"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-3 rounded-lg bg-brand-500 text-white"
+              >
+                {loading ? "Updating..." : "Update"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </>
   );
 };

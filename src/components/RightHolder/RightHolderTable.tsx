@@ -7,14 +7,16 @@ import ActionMenu from "@/components/ui/popover/ActionMenu";
 interface RightHolder {
   _id: string;
   name: string;
-  organizationId: { _id: string; name: string } | null;  // ⭐ allow null
-  createdByUserId: { _id: string; name: string } | null;  // ⭐ allow null
+  organizationId: { _id: string; name: string }  
+  createdByUserId: { _id: string; name: string } 
   approved: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export default function RightHolderTable({ data }: { data: RightHolder[] }) {
+  console.log(data,"Rightholders");
+  
   return (
     <>
       {data.length !== 0 ? (
@@ -66,9 +68,8 @@ export default function RightHolderTable({ data }: { data: RightHolder[] }) {
                   {/* ACTION MENU */}
                   <TableCell className="px-5 py-4 text-right">
                     <ActionMenu
-                      type=""
-                      data={rh}
-                      disable={rh._id}
+                      type="RIGHTHOLDER"
+                      data={rh} 
                     />
                   </TableCell>
                 </TableRow>

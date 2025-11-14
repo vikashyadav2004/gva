@@ -8,7 +8,7 @@ import React from 'react';
 const page = async() => {
   const orgs = await getOrganizations();
   const user = await getUsers();
-  const RightHolders = await getRightHolders();
+  const RightHolders = await getRightHolders(); 
   return (
     <div>
        <CreateRightHolder users={user} organizations={orgs} /> 

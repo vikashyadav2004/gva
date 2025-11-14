@@ -91,7 +91,7 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({ orgs }) => {
               </TableCell>
 
               <TableCell className="px-5 py-4 text-right">
-                <ActionMenu type="ORG" data={org} disable={org.adminUserId} />
+                <ActionMenu type="ORG" data={org}  />
               </TableCell>
             </TableRow>
           ))}

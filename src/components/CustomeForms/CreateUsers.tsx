@@ -53,6 +53,7 @@ const CreateUsers: React.FC<ModalProps> = ({ onClose, organization }) => {
         setErrorMsg(data.message || "Error creating user");
       } else {  
         onClose();
+        setTimeout(() => window.location.reload(), 10);
       }
     } catch (error) {
       console.log(error);

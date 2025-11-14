@@ -89,9 +89,8 @@ export default function ProtectionTable({ data }: { data: Protection[] }) {
 
                 <TableCell className="px-5 py-4 text-right">
                   <ActionMenu
-                    type=""
-                    data={prot}
-                    disable={prot._id}
+                    type="PROTECTION"
+                    data={prot} 
                   />
                 </TableCell>
               </TableRow>

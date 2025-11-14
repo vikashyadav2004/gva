@@ -20,11 +20,9 @@ export async function getProtections() {
 
   // ⭐ SUPER ADMIN can see ALL protections
   if (session.role === "SUPER_ADMIN") {
-    const protections = await Protection.find()
-      .populate("rightHolderId", "name")
+    const protections = await Protection.find() 
       .populate("organizationId", "name")
-      .populate("assignedUserId", "name email")
-      .populate("createdByUserId", "name email");
+      .populate("assignedUserId", "name")
 
     return JSON.parse(JSON.stringify(protections));
   }
